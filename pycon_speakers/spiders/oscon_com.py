@@ -1,7 +1,4 @@
-from scrapy.spider import Spider
-from scrapy.selector import Selector
-from scrapy.http import Request
-
+from scrapy import Spider, Request
 from pycon_speakers.loaders import SpeakerLoader
 
 class OsConSpider(Spider):
@@ -17,9 +14,8 @@ class OsConSpider(Spider):
             yield Request(url, meta=meta)
 
     def parse(self, response):
-        sel = Selector(response)
-        for speaker in sel.xpath('//span[@class="en_speaker_name"]').extract():
-            il = SpeakerLoader(response=response)
+        for speaker in response.xpath('//span[@class="en_speaker_name"]').extract():
+            il = SpeakerLoader()
             il.add_value('name', speaker)
             il.add_value('year', str(response.meta['year']))
             yield il.load_item()

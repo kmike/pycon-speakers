@@ -1,9 +1,5 @@
 import urllib
-
-from scrapy.http import Request
-from scrapy.selector import Selector
-from scrapy.spider import Spider
-
+from scrapy import Spider, Request
 from pycon_speakers.loaders import SpeakerLoader
 
 
@@ -28,9 +24,8 @@ class EuroSciPySpider(Spider):
     def parse(self, response):
         # The parameter __force_display allows to return all talks without
         # pagination.
-        sel = Selector(response)
-        for author in sel.xpath('//tr/td[2]/text()').extract():
-            sl = SpeakerLoader(selector=sel, response=response)
+        for author in response.xpath('//tr/td[2]/text()').extract():
+            sl = SpeakerLoader()
             # TODO: handle/remove affiliation value and possibly multiple
             # authors.
             sl.add_value('name', author)

@@ -1,9 +1,5 @@
 from urlparse import urljoin
-
-from scrapy.spider import Spider
-from scrapy.selector import Selector
-from scrapy.http import Request
-
+from scrapy import Spider, Request
 from pycon_speakers.loaders import SpeakerLoader
 
 ARCHIVE = {
@@ -35,10 +31,9 @@ class PyConSpider(Spider):
                               callback=self._parse_2010)
 
     def parse(self, response):
-        sel = Selector(response)
-        for link in sel.xpath("//a[contains(@href, '/presentation/') or "
-                              "    contains(@href, '/presentations/')]"
-                              "/@href").extract():
+        for link in response.xpath("//a[contains(@href, '/presentation/') or "
+                                   "    contains(@href, '/presentations/')]"
+                                   "/@href").extract():
             yield Request(urljoin(response.url, link),
                           callback=self._follow_speakers,
                           meta=response.meta)
@@ -50,7 +45,7 @@ class PyConSpider(Spider):
         yield il.load_item()
 
     def _parse_2010(self, response):
-        for section in Selector(response).xpath('//div[@class="proposal_list_summary"]'):
+        for section in response.xpath('//div[@class="proposal_list_summary"]'):
             il = SpeakerLoader(selector=section)
             il.add_xpath('name', './span[1]')
             il.add_value('year', str(response.meta['year']))

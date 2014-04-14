@@ -1,8 +1,5 @@
 import re
-
-from scrapy.spider import Spider
-from scrapy.selector import Selector
-
+from scrapy import Spider
 from pycon_speakers.loaders import SpeakerLoader
 
 
@@ -42,9 +39,8 @@ class SciPySpider(Spider):
             return callback(response)
 
     def parse_2008(self, response):
-        sel = Selector(response)
         talk_author_re = re.compile('^(?P<title>.+) \((?P<authors>.+?)\)$')
-        for event in sel.css('.section > p::text').extract():
+        for event in response.css('.section > p::text').extract():
             # For some reason, some entries have the character '\n' between the
             # talk name/author.
             event = event.replace('\n', ' ').strip()
@@ -52,30 +48,28 @@ class SciPySpider(Spider):
             if m:
                 data = talk_author_re.search(event).groupdict()
                 for author in data['authors'].split(','):
-                    sl = SpeakerLoader(selector=sel, response=response)
+                    sl = SpeakerLoader()
                     sl.add_value('name', author)
                     sl.add_value('year', response.meta['year'])
                     yield sl.load_item()
 
     def parse_2009(self, response):
-        sel = Selector(response)
         author_re = '<strong>.+</strong>.+\((.+)\)<'
-        for authors in sel.css('.section > p').re(author_re):
+        for authors in response.css('.section > p').re(author_re):
             # There are few multiple authors entries, some of them separated by
             # '&' and others with comma. The problem comes from entires with
             # author plus institution, i.e.: "Armando Sole, ESRF, France".
             # For now, we extract only the first author.
             author = authors.partition(',')[0]
-            sl = SpeakerLoader(selector=sel, response=response)
+            sl = SpeakerLoader()
             sl.add_value('name', author)
             sl.add_value('year', response.meta['year'])
             yield sl.load_item()
 
     def parse_2010(self, response):
-        sel = Selector(response)
-        for authors in sel.css('ul > li > em::text').extract():
+        for authors in response.css('ul > li > em::text').extract():
             for author in authors.split(','):
-                sl = SpeakerLoader(selector=sel, response=response)
+                sl = SpeakerLoader()
                 sl.add_value('name', author)
                 sl.add_value('year', response.meta['year'])
                 yield sl.load_item()
@@ -85,24 +79,22 @@ class SciPySpider(Spider):
         return self.parse_2010(response)
 
     def parse_2012(self, response):
-        sel = Selector(response)
         # Here we take a pure-regex approach as the layout varies between the
         # entries a little and the authors text have a fair uniform pattern.
-        for author in sel.css('#registrants_table').re('>\s*-\s*(.+?)\s*(?:$|<)'):
+        for author in response.css('#registrants_table').re('>\s*-\s*(.+?)\s*(?:$|<)'):
             if author == '--':  # No author.
                 continue
-            sl = SpeakerLoader(selector=sel, response=response)
+            sl = SpeakerLoader()
             sl.add_value('name', author)
             sl.add_value('year', response.meta['year'])
             yield sl.load_item()
 
     def parse_2013(self, response):
-        sel = Selector(response)
         # Probably this is the nicest layout of all versions.
-        for authors in sel.css('.authors::text').extract():
+        for authors in response.css('.authors::text').extract():
             # FIXME: few entries miss the multiple-author separator ';'.
             for author in authors.split(';'):
-                sl = SpeakerLoader(selector=sel, response=response)
+                sl = SpeakerLoader()
                 # FIXME: most author entry have the institution at the end.
                 sl.add_value('name', author)
                 sl.add_value('year', response.meta['year'])
